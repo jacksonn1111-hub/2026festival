@@ -47,6 +47,10 @@ input:disabled{background:var(--dis)}
 .stu .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stu.on{background:var(--sel);border-color:var(--selb);font-weight:700}
 .stu.taken{background:var(--dis);color:#9aa1b0;cursor:not-allowed;text-decoration:line-through}
+.tchk{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font:inherit;font-size:14px;cursor:pointer;color:var(--text)}
+.tchk::before{content:'\2610';margin-right:5px}
+.tchk.on{background:var(--sel);border-color:var(--selb);font-weight:700}
+.tchk.on::before{content:'\2611'}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .chip{background:var(--sel);border-radius:16px;padding:4px 6px 4px 10px;font-size:13px;display:flex;align-items:center;gap:4px}
 .chip button{border:0;background:transparent;font-size:16px;line-height:1;cursor:pointer;color:var(--navy)}
@@ -110,6 +114,7 @@ function h(tag, attrs, ...kids){
   kids.flat().forEach(k=>{ if(k==null||k===false) return; el.append(k.nodeType?k:document.createTextNode(k)); });
   return el;
 }
+const tLabel = ()=> S.type==='합창' ? '참여 교사' : '지도 교사';
 const sid = (g,b,n)=>`${g}-${b}-${n}`;
 const won = v => (v!==''&&v!=null&&Number(v)>=0) ? `= ${Number(v).toLocaleString('ko-KR')}원` : '';
 const clsKey = (g,b)=>`${g}-${b}`;
@@ -321,6 +326,17 @@ function studentCard(taken){
       selectable.forEach(s=>allOn?S.sel.delete(s.id):S.sel.add(s.id)); viewForm();
     }}, allOn?'이 반 전체 해제':'이 반 전체 선택')));
 
+  if(S.type==='합창'){
+    const c=R.classes.find(x=>clsKey(x.g,x.b)===S.tab);
+    if(c && (c.homeroom||c.sub)){
+      const wrap=h('div',{class:'row',style:'margin-top:8px'}, h('span',{class:'hint',style:'margin:0'},'함께 참여하는 교사'));
+      [[c.homeroom,'담임'],[c.sub,'부담임']].forEach(([n,l])=>{
+        if(!n) return;
+        wrap.append(h('button',{type:'button',class:'tchk'+(S.teachers.includes(n)?' on':''),'data-t':n,onclick:()=>toggleTeacher(n)},`${l} ${n}`));
+      });
+      card.append(wrap);
+    }
+  }
   const grid=h('div',{class:'grid'});
   list.forEach(s=>{
     const isTaken=!!taken[s.id];
@@ -372,10 +388,12 @@ function updateBar(){
 /* ---------- 지도 교사 ---------- */
 function teacherCard(){
   const R=S.roster;
-  const card=h('div',{class:'card'}, h('h2',null,'4. 지도 교사'));
+  const card=h('div',{class:'card'}, h('h2',null,`4. ${tLabel()}`));
   const sel=h('select',{onchange:e=>{ const v=e.target.value; if(v&&!S.teachers.includes(v)){ S.teachers.push(v); renderTeachers(); } e.target.value=''; }},
     h('option',{value:''},'교사 선택...'), R.teachers.map(t=>h('option',{value:t},t)));
-  card.append(sel, h('div',{id:'suggBox',class:'chips'}), h('div',{id:'tchips',class:'chips'}));
+  card.append(sel);
+  if(S.type==='합창') card.append(h('div',{class:'hint'},'학급 탭에서 담임·부담임을 체크하거나, 여기서 직접 선택할 수 있어요.'));
+  card.append(h('div',{id:'suggBox',class:'chips'}), h('div',{id:'tchips',class:'chips'}));
   setTimeout(()=>{ renderTeachers(); },0);
   return card;
 }
@@ -383,10 +401,16 @@ function renderTeachers(){
   const box=document.getElementById('tchips'); if(!box) return;
   box.replaceChildren(...S.teachers.map(t=>h('span',{class:'chip'},t,
     h('button',{type:'button',onclick:()=>{ S.teachers=S.teachers.filter(x=>x!==t); renderTeachers(); }},'×'))));
+  document.querySelectorAll('.tchk').forEach(b=>b.classList.toggle('on',S.teachers.includes(b.getAttribute('data-t'))));
   renderSuggestions();
+}
+function toggleTeacher(n){
+  S.teachers = S.teachers.includes(n) ? S.teachers.filter(x=>x!==n) : [...S.teachers,n];
+  renderTeachers();
 }
 function renderSuggestions(){
   const box=document.getElementById('suggBox'); if(!box) return;
+  if(S.type==='합창'){ box.replaceChildren(); return; }
   const R=S.roster, used=new Set(S.teachers), items=[];
   const ks=new Set([...S.sel].map(i=>{const s=R.byId[i];return s&&clsKey(s.g,s.b);}).filter(Boolean));
   R.classes.filter(c=>ks.has(clsKey(c.g,c.b))).forEach(c=>{
@@ -410,7 +434,7 @@ async function submit(){
   if(S.type==='부스' && f.budget!=='' && !(Number(f.budget)>=0)) return fail('필요 예산은 0 이상의 숫자로 입력해 주세요.');
   if(!S.sel.size) return fail('참여 학생을 선택해 주세요.');
   if(!S.repId) return fail('대표 학생을 선택해 주세요.');
-  if(!S.teachers.length) return fail('지도 교사를 1명 이상 선택해 주세요.');
+  if(!S.teachers.length) return fail(`${tLabel()}를 1명 이상 선택해 주세요.`);
   if(!/^\d{4}$/.test(f.pin)) return fail('수정용 비밀번호를 숫자 4자리로 입력해 주세요.');
 
   const detail = S.type==='합창'?f.accomp : S.type==='부스'?f.content : S.type==='활동 발표'?f.format : '';

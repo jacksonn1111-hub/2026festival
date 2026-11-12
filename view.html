@@ -169,7 +169,7 @@ function card(s){
   const rows=[];
   const add=(k,v)=>{ if(v!==''&&v!=null&&v!==0) rows.push([k,v]); };
   add('접수 일시',s.at);
-  add('지도 교사',s.teachers);
+  add(s.type==='합창'?'참여 교사':'지도 교사',s.teachers);
   add('대표 학생',s.rep);
   if(s.type==='합창') add('반주 방식',s.detail);
   if(s.type==='부스'){ add('운영 내용',s.detail); add('필요 물품',s.items); if(s.budget!=null) add('필요 예산',`${fmt(s.budget)}원`); }
