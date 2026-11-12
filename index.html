@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>동아리 발표회 접수</title>
+<style>
+:root{
+  --navy:#1F3864; --navy-d:#16294a; --line:#d9dee8; --bg:#f4f6fa; --card:#fff;
+  --text:#1b2333; --sub:#6b7487; --sel:#dbe6ff; --selb:#1F3864; --dis:#eceef2; --err:#c0392b; --ok:#1e7a4c;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;background:var(--bg);color:var(--text);
+  padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));line-height:1.5}
+header{background:var(--navy);color:#fff;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 16px}
+header h1{margin:0;font-size:20px}
+header p{margin:4px 0 0;font-size:13px;opacity:.85}
+main{max-width:760px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h2{margin:0 0 10px;font-size:15px;color:var(--navy)}
+label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
+label small{font-weight:400;color:var(--sub)}
+input[type=text],input[type=password],input[type=number],select,textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:15px;background:#fff;color:var(--text)}
+textarea{min-height:70px;resize:vertical}
+input:disabled{background:var(--dis)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg button,.opt{padding:10px 4px;border:1px solid var(--line);background:#fff;border-radius:8px;font:inherit;font-size:14px;color:var(--text);cursor:pointer}
+.seg button.on,.opt.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.opt{padding:8px 12px}
+.btn{border:0;background:var(--navy);color:#fff;border-radius:10px;padding:12px 16px;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.5}
+.btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+.btn.small{padding:6px 10px;font-size:13px;font-weight:500}
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:6px}
+.tab{position:relative;padding:8px 0;border:1px solid var(--line);background:#fff;border-radius:8px;font:inherit;font-size:14px;cursor:pointer;color:var(--text)}
+.tab.cur{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tab .badge{position:absolute;top:-6px;right:-4px;background:#e8590c;color:#fff;border-radius:10px;font-size:11px;min-width:18px;padding:0 5px;line-height:18px}
+.grade-label{font-size:12px;color:var(--sub);margin:6px 0 3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;margin-top:8px}
+.stu{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 6px;font:inherit;font-size:14px;text-align:left;cursor:pointer;color:var(--text);
+  display:flex;gap:6px;align-items:baseline;overflow:hidden}
+.stu .n{color:var(--sub);font-size:12px;min-width:18px}
+.stu .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu.on{background:var(--sel);border-color:var(--selb);font-weight:700}
+.stu.taken{background:var(--dis);color:#9aa1b0;cursor:not-allowed;text-decoration:line-through}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{background:var(--sel);border-radius:16px;padding:4px 6px 4px 10px;font-size:13px;display:flex;align-items:center;gap:4px}
+.chip button{border:0;background:transparent;font-size:16px;line-height:1;cursor:pointer;color:var(--navy)}
+.sugg{border:1px dashed var(--navy);background:#fff;color:var(--navy);border-radius:16px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
+.hint{font-size:12px;color:var(--sub);margin-top:4px}
+.msg{padding:10px 12px;border-radius:8px;font-size:14px;margin:8px 0;white-space:pre-wrap}
+.msg.err{background:#fdecea;color:var(--err)}
+.msg.warn{background:#fff6e0;color:#8a5a00}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));z-index:5}
+.bar .in{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.bar .sum{flex:1;font-size:13px;color:var(--sub)}
+.bar .sum b{color:var(--navy);font-size:16px}
+.big{font-size:44px;font-weight:800;color:var(--navy);text-align:center;margin:8px 0}
+.center{text-align:center}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>동아리 발표회 접수</h1>
+  <p>오전 합창 · 점심 동아리 부스 · 오후 활동 발표 / 공연</p>
+</header>
+<main id="app"></main>
+<div id="bar" class="bar hidden"><div class="in">
+  <div class="sum" id="sum"></div>
+  <button class="btn" id="submitBtn">접수하기</button>
+</div></div>
+
+<script>
+/* ===================== 설정 ===================== */
+// Apps Script 웹앱 배포 URL을 넣으세요. 비워 두면 가짜 데이터로 동작하는 '미리보기(데모)' 모드가 됩니다.
+const API_URL = 'https://script.google.com/macros/s/AKfycbyo49r7tYWErsXZR95uYDMnFBrsBPIo6IgCjeUGHXO591ZVAP92Y1bHm_ApzhLoew7qCw/exec';
+/* ================================================ */
+
+const TYPE_CFG = {
+  '합창':     { teamLabel:'팀 이름', teamRequired:true,
+                titleLabel:'곡명', tbd:true },
+  '부스':     { teamLabel:'동아리 이름', teamRequired:true, titleLabel:'부스 이름', tbd:false },
+  '활동 발표': { teamLabel:'동아리 이름', teamRequired:true, titleLabel:'발표 제목', tbd:false },
+  '공연':     { teamLabel:'동아리 이름', teamRequired:true, titleLabel:'곡명 / 종목', tbd:true },
+};
+const TYPES = Object.keys(TYPE_CFG);
+
+const S = {            // 화면 상태
+  roster:null, type:'합창', tab:'1-1', sel:new Set(), teachers:[], repId:'',
+  tbd:false, busy:false, msg:'', warn:'',
+  f:{ team:'', title:'', accomp:'피아노', content:'', items:'', budget:'', format:'PPT', minutes:'', pin:'' },
+};
+const $app = document.getElementById('app');
+const $bar = document.getElementById('bar');
+
+/* ---------- 유틸 ---------- */
+function h(tag, attrs, ...kids){
+  const el = document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs||{})){
+    if(k==='class') el.className=v;
+    else if(k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if(v===true) el.setAttribute(k,'');
+    else if(v!==false && v!=null) el.setAttribute(k,v);
+  }
+  kids.flat().forEach(k=>{ if(k==null||k===false) return; el.append(k.nodeType?k:document.createTextNode(k)); });
+  return el;
+}
+const sid = (g,b,n)=>`${g}-${b}-${n}`;
+const won = v => (v!==''&&v!=null&&Number(v)>=0) ? `= ${Number(v).toLocaleString('ko-KR')}원` : '';
+const clsKey = (g,b)=>`${g}-${b}`;
+
+/* ---------- 통신 ---------- */
+async function api(action, payload={}){
+  if(!API_URL) return demoApi(action, payload);
+  try{
+    const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action, ...payload}) });
+    return await res.json();
+  }catch(e){
+    return {ok:false, error:'서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.'};
+  }
+}
+
+/* ---------- 데모(미리보기) 백엔드 : 가짜 이름만 사용 ---------- */
+const DEMO = { subs:[], roster:null };
+function demoRoster(){
+  if(DEMO.roster) return DEMO.roster;
+  const fam=['가','나','다','라','마','바','사','아'], giv=['온','솔','별','빛','결','봄','숲','연','하','리'];
+  const classes=[], students=[], teachers=[];
+  for(let g=1; g<=3; g++) for(let b=1; b<=6; b++){
+    classes.push({g,b,homeroom:`담임${g}${b}`,sub:`부담임${g}${b}`});
+    teachers.push(`담임${g}${b}`,`부담임${g}${b}`);
+    const cnt = 14 + ((g*7+b*3)%6);
+    for(let n=1; n<=cnt; n++) students.push([g,b,n, `${fam[(n+b)%8]}${giv[(n*3+g)%10]}${giv[(n+b*2)%10]}`]);
+  }
+  teachers.sort((a,b)=>a.localeCompare(b,'ko'));
+  return DEMO.roster={classes,teachers,students};
+}
+function demoApi(action, p){
+  const delay = ms=>new Promise(r=>setTimeout(r,ms));
+  return delay(250).then(()=>{
+    const R = demoRoster();
+    if(action==='roster'){
+      const taken={}; TYPES.forEach(t=>taken[t]={});
+      DEMO.subs.forEach(s=>s.ids.forEach(i=>taken[s.type][i]=s.team));
+      return {ok:true, types:TYPES, closed:false, ...R, taken};
+    }
+    if(action==='submit'){
+      const dup = DEMO.subs.filter(s=>s.type===p.type).flatMap(s=>s.ids.filter(i=>p.ids.includes(i)));
+      if(dup.length) return {ok:false, conflict:true, error:'이미 같은 유형으로 접수된 학생이 있습니다.'};
+      const classes=[...new Set(p.ids.map(i=>i.split('-').slice(0,2).join('-')))].sort();
+      const team=(p.team||'').trim()||classes.join(' + ');
+      const no=DEMO.subs.length+1;
+      DEMO.subs.push({no,type:p.type,team,ids:p.ids,pin:p.pin});
+      return {ok:true,no,team,count:p.ids.length};
+    }
+    if(action==='updateTitle'){
+      const s=DEMO.subs.find(x=>x.no===Number(p.no));
+      if(!s) return {ok:false,error:'해당 접수번호를 찾을 수 없습니다.'};
+      if(s.pin!==String(p.pin)) return {ok:false,error:'비밀번호가 맞지 않습니다.'};
+      return {ok:true,team:s.team,type:s.type};
+    }
+    return {ok:false,error:'알 수 없는 요청입니다.'};
+  });
+}
+
+/* ---------- 화면: 명단 불러오기 ---------- */
+async function viewLoad(){
+  $bar.classList.add('hidden');
+  $app.replaceChildren(h('div',{class:'card center'},
+    h('p',null,'명단을 불러오는 중이에요...'),
+    API_URL ? null : h('div',{class:'msg warn'},'미리보기(데모) 모드입니다. 구글 스프레드시트에 연결하기 전이라 가짜 이름이 표시돼요.')));
+  const r = await api('roster');
+  if(!r.ok){
+    $app.replaceChildren(h('div',{class:'card center'},
+      h('div',{class:'msg err'},r.error||'명단을 불러오지 못했어요.'),
+      h('button',{class:'btn',onclick:viewLoad},'다시 시도')));
+    return;
+  }
+  S.roster = prepRoster(r); S.tab = firstTab(); viewForm();
+}
+
+function prepRoster(r){
+  const classes = r.classes.slice().sort((a,b)=>a.g-b.g||a.b-b.b);
+  const byClass = {};
+  classes.forEach(c=>byClass[clsKey(c.g,c.b)]=[]);
+  r.students.forEach(([g,b,n,name])=>{
+    (byClass[clsKey(g,b)] = byClass[clsKey(g,b)] || []).push({id:sid(g,b,n),g,b,n,name});
+  });
+  Object.values(byClass).forEach(a=>a.sort((x,y)=>x.n-y.n));
+  const byId = {};
+  Object.values(byClass).flat().forEach(s=>byId[s.id]=s);
+  return {...r, classes, byClass, byId};
+}
+const firstTab = ()=>{ const c=S.roster.classes[0]; return c?clsKey(c.g,c.b):'1-1'; };
+
+/* ---------- 화면: 접수 폼 ---------- */
+function viewForm(){
+  const R = S.roster, cfg = TYPE_CFG[S.type];
+  $bar.classList.remove('hidden');
+  const taken = (R.taken||{})[S.type] || {};
+
+  // 이미 접수된 학생은 선택에서 제외
+  const removed=[];
+  [...S.sel].forEach(id=>{ if(taken[id]){ S.sel.delete(id); removed.push(R.byId[id]?.name||id); }});
+  if(removed.length) S.warn = `이미 '${S.type}'으로 접수된 학생은 선택에서 뺐어요: ${removed.join(', ')}`;
+  if(!S.sel.has(S.repId)) S.repId = [...S.sel][0] || '';
+
+  const nodes = [];
+
+  if(R.closed) nodes.push(h('div',{class:'msg err'},'접수가 마감되었습니다.'));
+
+  // 1. 유형
+  nodes.push(h('div',{class:'card'},
+    h('h2',null,'1. 접수 유형'),
+    h('div',{class:'seg'}, TYPES.map(t=>h('button',{class:t===S.type?'on':'',onclick:()=>{ S.type=t; S.msg=''; S.warn=''; if(!TYPE_CFG[t].tbd) S.tbd=false; viewForm(); }},t)))
+  ));
+
+  // 2. 팀 / 동아리 + 상세
+  const team = h('input',{type:'text',value:S.f.team,placeholder:cfg.teamRequired?'':'(선택)',oninput:e=>S.f.team=e.target.value});
+  const c2 = h('div',{class:'card'}, h('h2',null,'2. 기본 정보'),
+    h('label',null,cfg.teamLabel, cfg.teamRequired?'':h('small',null,' (선택)')), team,
+    cfg.teamHint?h('div',{class:'hint'},cfg.teamHint):null);
+
+  const title = h('input',{type:'text',value:S.tbd?'':S.f.title,disabled:S.tbd,oninput:e=>S.f.title=e.target.value});
+  c2.append(h('label',null,cfg.titleLabel), title);
+  if(cfg.tbd){
+    c2.append(h('label',{style:'display:flex;gap:6px;align-items:center;font-weight:400;margin-top:6px'},
+      h('input',{type:'checkbox',checked:S.tbd,onchange:e=>{ S.tbd=e.target.checked; viewForm(); }}),
+      '아직 못 정했어요 (미정) — 나중에 접수번호로 수정할 수 있어요'));
+  }
+  if(S.type==='합창'){
+    c2.append(h('label',null,'반주 방식'), optGroup(['피아노','음원','무반주'],S.f.accomp,v=>S.f.accomp=v));
+  }
+  if(S.type==='부스'){
+    const budgetText=h('div',{class:'hint'});
+    c2.append(h('div',{class:'msg warn',style:'margin-top:12px'},'이번 동아리 부스에서는 판매 활동을 진행하지 않아요. 체험·전시 등으로 운영 내용을 계획해 주세요. 양해 부탁드려요 🙏'),
+      h('label',null,'운영 내용 ',h('small',null,'(체험·전시 등)')),
+      h('textarea',{oninput:e=>S.f.content=e.target.value},S.f.content),
+      h('label',null,'필요 물품 ',h('small',null,'(책상·의자 수, 전기 사용 여부 등)')),
+      h('textarea',{oninput:e=>S.f.items=e.target.value},S.f.items),
+      h('label',null,'필요 예산(원) ',h('small',null,'(없으면 비워 두세요)')),
+      h('input',{type:'number',min:'0',step:'1000',inputmode:'numeric',placeholder:'예: 50000',value:S.f.budget,
+        oninput:e=>{ S.f.budget=e.target.value; budgetText.textContent=won(S.f.budget); }}),
+      budgetText);
+    budgetText.textContent=won(S.f.budget);
+  }
+  if(S.type==='활동 발표'){
+    c2.append(h('label',null,'발표 형태'), optGroup(['PPT','영상','시연','기타'],S.f.format,v=>S.f.format=v),
+      h('label',null,'소요 시간(분)'), h('input',{type:'number',min:'1',inputmode:'numeric',value:S.f.minutes,oninput:e=>S.f.minutes=e.target.value}),
+      h('label',null,'추가 필요 장비 ',h('small',null,'(기본 장비 외에 필요한 것만, 없으면 비워 두세요)')),
+      h('input',{type:'text',value:S.f.items,oninput:e=>S.f.items=e.target.value}));
+  }
+  if(S.type==='공연'){
+    c2.append(h('label',null,'소요 시간(분)'), h('input',{type:'number',min:'1',inputmode:'numeric',value:S.f.minutes,oninput:e=>S.f.minutes=e.target.value}),
+      h('label',null,'추가 필요 장비 ',h('small',null,'(악기·음원 파일 등 기본 장비 외에 필요한 것만, 없으면 비워 두세요)')),
+      h('input',{type:'text',value:S.f.items,oninput:e=>S.f.items=e.target.value}));
+  }
+  nodes.push(c2);
+
+  // 3. 학생 선택
+  nodes.push(studentCard(taken));
+
+  // 4. 지도 교사
+  nodes.push(teacherCard());
+
+  // 5. 비밀번호
+  nodes.push(h('div',{class:'card'}, h('h2',null,'5. 수정용 비밀번호'),
+    h('input',{type:'password',inputmode:'numeric',maxlength:'4',placeholder:'숫자 4자리',value:S.f.pin,oninput:e=>S.f.pin=e.target.value.replace(/\D/g,'')}),
+    h('div',{class:'hint'},'접수 후 곡명·제목을 고칠 때 접수번호와 함께 필요해요. 꼭 기억해 두세요.')));
+
+  if(S.warn) nodes.push(h('div',{class:'msg warn'},S.warn));
+  if(S.msg) nodes.push(h('div',{class:'msg err'},S.msg));
+  nodes.push(h('div',{class:'center'}, h('button',{class:'btn ghost small',onclick:viewEdit},'접수한 곡명·제목 수정하기')));
+
+  $app.replaceChildren(...nodes);
+  updateBar();
+}
+
+function optGroup(list, cur, onPick){
+  const wrap = h('div',{class:'opts'});
+  list.forEach(v=>{
+    const b = h('button',{class:'opt'+(v===cur?' on':''),type:'button',onclick:()=>{
+      onPick(v); [...wrap.children].forEach(x=>x.classList.toggle('on',x===b));
+    }},v);
+    wrap.append(b);
+  });
+  return wrap;
+}
+
+function studentCard(taken){
+  const R=S.roster;
+  const card = h('div',{class:'card'}, h('h2',null,'3. 참여 학생'));
+  card.append(h('div',{class:'hint',style:'margin:-4px 0 8px'},'학급을 눌러 이름을 선택하세요. 다른 학급으로 넘어가도 선택이 유지돼서 여러 반이 함께 참여할 수 있어요.'));
+
+  // 학급 탭 (학년별 줄)
+  const counts={}; S.sel.forEach(id=>{ const s=R.byId[id]; if(s) counts[clsKey(s.g,s.b)]=(counts[clsKey(s.g,s.b)]||0)+1; });
+  [...new Set(R.classes.map(c=>c.g))].forEach(g=>{
+    card.append(h('div',{class:'grade-label'},`${g}학년`));
+    const tabs=h('div',{class:'tabs'});
+    R.classes.filter(c=>c.g===g).forEach(c=>{
+      const k=clsKey(c.g,c.b);
+      tabs.append(h('button',{class:'tab'+(k===S.tab?' cur':''),type:'button',onclick:()=>{ S.tab=k; viewForm(); }},
+        `${c.g}-${c.b}`, counts[k]?h('span',{class:'badge'},counts[k]):null));
+    });
+    card.append(tabs);
+  });
+
+  // 현재 학급 학생
+  const list = R.byClass[S.tab] || [];
+  const selectable = list.filter(s=>!taken[s.id]);
+  const allOn = selectable.length>0 && selectable.every(s=>S.sel.has(s.id));
+  card.append(h('div',{class:'row',style:'margin-top:10px;justify-content:space-between'},
+    h('b',null,`${S.tab} (${list.length}명)`),
+    h('button',{class:'btn ghost small',type:'button',onclick:()=>{
+      selectable.forEach(s=>allOn?S.sel.delete(s.id):S.sel.add(s.id)); viewForm();
+    }}, allOn?'이 반 전체 해제':'이 반 전체 선택')));
+
+  const grid=h('div',{class:'grid'});
+  list.forEach(s=>{
+    const isTaken=!!taken[s.id];
+    const btn=h('button',{type:'button',class:'stu'+(S.sel.has(s.id)?' on':'')+(isTaken?' taken':''),
+      title:isTaken?`이미 접수됨 (${taken[s.id]})`:'',disabled:isTaken,
+      onclick:()=>{ if(S.sel.has(s.id)) S.sel.delete(s.id); else S.sel.add(s.id);
+        btn.classList.toggle('on',S.sel.has(s.id)); if(!S.sel.has(S.repId)) S.repId=[...S.sel][0]||''; refreshCountsAndBar(); }},
+      h('span',{class:'n'},s.n), h('span',{class:'nm'},s.name));
+    grid.append(btn);
+  });
+  card.append(grid);
+  if(list.some(s=>taken[s.id])) card.append(h('div',{class:'hint'},'취소선이 있는 학생은 이미 같은 유형으로 접수되어 선택할 수 없어요.'));
+
+  // 대표 학생
+  card.append(h('div',{id:'repBox'}));
+  setTimeout(renderRep,0);
+  return card;
+}
+
+function renderRep(){
+  const box=document.getElementById('repBox'); if(!box) return;
+  const R=S.roster;
+  const ids=[...S.sel].map(i=>R.byId[i]).filter(Boolean).sort((a,b)=>a.g-b.g||a.b-b.b||a.n-b.n);
+  if(!ids.length){ box.replaceChildren(); return; }
+  const sel=h('select',{onchange:e=>S.repId=e.target.value},
+    ids.map(s=>h('option',{value:s.id,selected:s.id===S.repId},`${s.g}-${s.b} ${s.n}번 ${s.name}`)));
+  box.replaceChildren(h('label',null,'대표 학생 ',h('small',null,'(선택한 학생 중 1명)')), sel);
+}
+
+function refreshCountsAndBar(){
+  const R=S.roster, counts={};
+  S.sel.forEach(id=>{ const s=R.byId[id]; if(s) counts[clsKey(s.g,s.b)]=(counts[clsKey(s.g,s.b)]||0)+1; });
+  document.querySelectorAll('.tab').forEach(t=>{
+    const k=t.firstChild.textContent; let b=t.querySelector('.badge');
+    if(counts[k]){ if(!b){ b=h('span',{class:'badge'}); t.append(b);} b.textContent=counts[k]; } else if(b) b.remove();
+  });
+  renderRep(); renderSuggestions(); updateBar();
+}
+
+function updateBar(){
+  const R=S.roster, per={};
+  S.sel.forEach(id=>{ const s=R.byId[id]; if(s) per[clsKey(s.g,s.b)]=(per[clsKey(s.g,s.b)]||0)+1; });
+  const keys=Object.keys(per).sort((a,b)=>{const[x,y]=a.split('-').map(Number),[p,q]=b.split('-').map(Number);return x-p||y-q;});
+  const sum=document.getElementById('sum');
+  sum.replaceChildren(h('b',null,`${S.sel.size}명`), keys.length?` 선택 · ${keys.map(k=>`${k} ${per[k]}명`).join(' + ')}`:' 선택 (학생을 골라 주세요)');
+  document.getElementById('submitBtn').disabled = S.busy || R.closed;
+}
+
+/* ---------- 지도 교사 ---------- */
+function teacherCard(){
+  const R=S.roster;
+  const card=h('div',{class:'card'}, h('h2',null,'4. 지도 교사'));
+  const sel=h('select',{onchange:e=>{ const v=e.target.value; if(v&&!S.teachers.includes(v)){ S.teachers.push(v); renderTeachers(); } e.target.value=''; }},
+    h('option',{value:''},'교사 선택...'), R.teachers.map(t=>h('option',{value:t},t)));
+  card.append(sel, h('div',{id:'suggBox',class:'chips'}), h('div',{id:'tchips',class:'chips'}));
+  setTimeout(()=>{ renderTeachers(); },0);
+  return card;
+}
+function renderTeachers(){
+  const box=document.getElementById('tchips'); if(!box) return;
+  box.replaceChildren(...S.teachers.map(t=>h('span',{class:'chip'},t,
+    h('button',{type:'button',onclick:()=>{ S.teachers=S.teachers.filter(x=>x!==t); renderTeachers(); }},'×'))));
+  renderSuggestions();
+}
+function renderSuggestions(){
+  const box=document.getElementById('suggBox'); if(!box) return;
+  const R=S.roster, used=new Set(S.teachers), items=[];
+  const ks=new Set([...S.sel].map(i=>{const s=R.byId[i];return s&&clsKey(s.g,s.b);}).filter(Boolean));
+  R.classes.filter(c=>ks.has(clsKey(c.g,c.b))).forEach(c=>{
+    if(c.homeroom && !used.has(c.homeroom) && R.teachers.includes(c.homeroom)) items.push([c.homeroom,`${c.g}-${c.b} 담임`]);
+    if(c.sub && !used.has(c.sub) && R.teachers.includes(c.sub)) items.push([c.sub,`${c.g}-${c.b} 부담임`]);
+  });
+  box.replaceChildren(...items.map(([n,l])=>h('button',{type:'button',class:'sugg',onclick:()=>{ S.teachers.push(n); renderTeachers(); }},`+ ${n} (${l})`)));
+}
+
+/* ---------- 접수 ---------- */
+document.getElementById('submitBtn').addEventListener('click', submit);
+async function submit(){
+  if(S.busy) return;
+  const cfg=TYPE_CFG[S.type], f=S.f, R=S.roster;
+  const fail=m=>{ S.msg=m; S.warn=''; viewForm(); window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); };
+  if(cfg.teamRequired && !f.team.trim()) return fail(`${cfg.teamLabel}을(를) 입력해 주세요.`);
+  const tbd = cfg.tbd && S.tbd;
+  if(!tbd && !f.title.trim()) return fail(`${cfg.titleLabel}을(를) 입력해 주세요.${cfg.tbd?' (아직 못 정했다면 \'미정\'을 체크하세요.)':''}`);
+  if(S.type==='활동 발표' && !(Number(f.minutes)>0)) return fail('소요 시간(분)을 입력해 주세요.');
+  if(S.type==='공연' && !(Number(f.minutes)>0)) return fail('소요 시간(분)을 입력해 주세요.');
+  if(S.type==='부스' && f.budget!=='' && !(Number(f.budget)>=0)) return fail('필요 예산은 0 이상의 숫자로 입력해 주세요.');
+  if(!S.sel.size) return fail('참여 학생을 선택해 주세요.');
+  if(!S.repId) return fail('대표 학생을 선택해 주세요.');
+  if(!S.teachers.length) return fail('지도 교사를 1명 이상 선택해 주세요.');
+  if(!/^\d{4}$/.test(f.pin)) return fail('수정용 비밀번호를 숫자 4자리로 입력해 주세요.');
+
+  const detail = S.type==='합창'?f.accomp : S.type==='부스'?f.content : S.type==='활동 발표'?f.format : '';
+  const payload={ type:S.type, team:f.team.trim(), repId:S.repId, ids:[...S.sel], teachers:S.teachers,
+    title:tbd?'미정':f.title.trim(), detail, minutes:f.minutes, items:f.items, budget:S.type==='부스'?f.budget:'', pin:f.pin };
+
+  S.busy=true; S.msg=''; S.warn=''; updateBar();
+  const btn=document.getElementById('submitBtn'); btn.textContent='접수 중...';
+  const r=await api('submit',payload);
+  S.busy=false; btn.textContent='접수하기';
+  if(!r.ok){
+    if(r.conflict){ const n=await api('roster'); if(n.ok) S.roster=prepRoster(n); }
+    return fail(r.error||'접수에 실패했어요. 다시 시도해 주세요.');
+  }
+  viewDone(r, payload);
+}
+
+function viewDone(r, p){
+  $bar.classList.add('hidden');
+  const R=S.roster;
+  $app.replaceChildren(h('div',{class:'card'},
+    h('h2',{class:'center'},'접수가 완료되었어요 🎉'),
+    h('div',{class:'center hint'},'접수번호'),
+    h('div',{class:'big'},String(r.no)),
+    h('div',{class:'msg warn'},'접수번호와 방금 정한 비밀번호 4자리를 꼭 기억해 두세요. 곡명·제목을 고칠 때 필요해요.'),
+    h('p',null,`유형: ${p.type}`), h('p',null,`팀: ${r.team}`), h('p',null,`참여 인원: ${r.count}명`),
+    (p.budget!==''&&p.budget!=null)?h('p',null,`필요 예산: ${Number(p.budget).toLocaleString('ko-KR')}원`):null,
+    h('p',null,`${TYPE_CFG[p.type].titleLabel}: ${p.title}`),
+    h('div',{class:'row',style:'margin-top:12px'},
+      h('button',{class:'btn',onclick:()=>{ resetForm(); viewForm(); }},'다른 팀 접수하기'),
+      h('button',{class:'btn ghost',onclick:viewEdit},'곡명·제목 수정'))
+  ));
+  window.scrollTo(0,0);
+}
+function resetForm(){
+  S.sel=new Set(); S.teachers=[]; S.repId=''; S.tbd=false; S.msg=''; S.warn='';
+  S.f={ team:'', title:'', accomp:'피아노', content:'', items:'', budget:'', format:'PPT', minutes:'', pin:'' };
+  // 방금 접수한 학생이 막히도록 최신 접수 현황을 다시 불러온다
+  api('roster').then(n=>{ if(n.ok){ S.roster=prepRoster(n); viewForm(); } });
+}
+
+/* ---------- 곡명·제목 수정 ---------- */
+function viewEdit(){
+  $bar.classList.add('hidden');
+  const no=h('input',{type:'number',inputmode:'numeric',placeholder:'접수번호'});
+  const pin=h('input',{type:'password',inputmode:'numeric',maxlength:'4',placeholder:'비밀번호 4자리'});
+  const title=h('input',{type:'text',placeholder:'새 곡명 / 제목'});
+  const out=h('div');
+  const btn=h('button',{class:'btn',style:'width:100%;margin-top:12px',onclick:async()=>{
+    if(!no.value||!/^\d{4}$/.test(pin.value)||!title.value.trim()){ out.replaceChildren(h('div',{class:'msg err'},'접수번호, 비밀번호(4자리), 새 곡명을 모두 입력해 주세요.')); return; }
+    btn.disabled=true; btn.textContent='수정 중...';
+    const r=await api('updateTitle',{no:Number(no.value),pin:pin.value,title:title.value.trim()});
+    btn.disabled=false; btn.textContent='수정하기';
+    out.replaceChildren(r.ok?h('div',{class:'msg warn',style:'background:#e7f6ee;color:var(--ok)'},`수정되었어요. (${r.type} · ${r.team})`)
+                           :h('div',{class:'msg err'},r.error));
+  }},'수정하기');
+  $app.replaceChildren(h('div',{class:'card'},
+    h('h2',null,'접수한 곡명·제목 수정'),
+    h('label',null,'접수번호'),no, h('label',null,'비밀번호'),pin, h('label',null,'새 곡명 / 제목'),title, btn, out,
+    h('div',{class:'center',style:'margin-top:12px'},h('button',{class:'btn ghost small',onclick:viewForm},'← 접수 화면으로'))));
+}
+
+/* ---------- 시작 ---------- */
+viewLoad();
+</script>
+</body>
+</html>

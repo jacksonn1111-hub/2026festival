@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>동아리 발표회 접수 현황</title>
+<style>
+:root{--navy:#1F3864;--line:#d9dee8;--bg:#f4f6fa;--card:#fff;--text:#1b2333;--sub:#6b7487;--sel:#dbe6ff;--warn:#e8590c}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+header{background:var(--navy);color:#fff;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header h1{margin:0;font-size:19px}
+header p{margin:2px 0 0;font-size:12px;opacity:.85}
+header .acts{display:flex;gap:6px}
+header button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
+main{max-width:880px;margin:0 auto;padding:12px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .v{font-size:20px;font-weight:800;color:var(--navy)}
+.stat .l{font-size:12px;color:var(--sub)}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px}
+.tab{flex:0 0 auto;padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:18px;font:inherit;font-size:14px;cursor:pointer;color:var(--text)}
+.tab.cur{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tab small{opacity:.75;margin-left:3px}
+input[type=search]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:15px;margin-bottom:10px}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+summary::-webkit-details-marker{display:none}
+summary .no{font-weight:800;color:var(--navy);min-width:30px}
+summary .team{font-weight:700}
+.badge{font-size:12px;padding:2px 8px;border-radius:10px;background:var(--sel);color:var(--navy)}
+.badge.tbd{background:#fff0e0;color:var(--warn)}
+.meta{color:var(--sub);font-size:13px}
+.body{padding:2px 12px 12px;border-top:1px solid var(--line);font-size:14px}
+.body dl{margin:8px 0 0;display:grid;grid-template-columns:96px 1fr;gap:4px 8px}
+.body dt{color:var(--sub);font-size:13px}
+.body dd{margin:0;white-space:pre-wrap}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:14px}
+th{background:var(--navy);color:#fff;font-weight:600;padding:8px 4px}
+td{padding:7px 4px;text-align:center;border-top:1px solid var(--line)}
+td.z{color:#b8bfcc}
+td.zc{background:#fff3e6;color:var(--warn);font-weight:700}
+.note{background:#fff6e0;color:#8a5a00;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px}
+.empty{text-align:center;color:var(--sub);padding:30px 0}
+.err{background:#fdecea;color:#c0392b;border-radius:8px;padding:10px 12px;margin:10px 0}
+.demo{background:#fff6e0;color:#8a5a00;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+@media print{header .acts,.tabs,input[type=search],.demo{display:none}body{background:#fff}details{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>동아리 발표회 접수 현황</h1><p id="upd">불러오는 중...</p></div>
+  <div class="acts"><button id="reload">새로고침</button><button id="print">인쇄</button></div>
+</header>
+<main id="app"></main>
+
+<script>
+/* ===================== 설정 ===================== */
+// 접수 페이지(index.html)와 같은 Apps Script 웹앱 URL을 넣으세요. 비워 두면 가짜 데이터로 보는 데모 모드예요.
+const API_URL = 'https://script.google.com/macros/s/AKfycbyo49r7tYWErsXZR95uYDMnFBrsBPIo6IgCjeUGHXO591ZVAP92Y1bHm_ApzhLoew7qCw/exec';
+/* ================================================ */
+
+const TYPES = ['합창','부스','활동 발표','공연'];
+const S = { data:null, tab:'전체', q:'' };
+const $app = document.getElementById('app');
+
+function h(tag, attrs, ...kids){
+  const el=document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs||{})){
+    if(k==='class') el.className=v;
+    else if(k.startsWith('on')) el.addEventListener(k.slice(2),v);
+    else if(v===true) el.setAttribute(k,'');
+    else if(v!==false&&v!=null) el.setAttribute(k,v);
+  }
+  kids.flat().forEach(k=>{ if(k==null||k===false) return; el.append(k.nodeType?k:document.createTextNode(k)); });
+  return el;
+}
+
+/* ---------- 통신 ---------- */
+async function load(){
+  $app.replaceChildren(h('div',{class:'empty'},'불러오는 중...'));
+  let r;
+  if(!API_URL) r = await demoList();
+  else {
+    try{
+      const res = await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'list'})});
+      r = await res.json();
+    }catch(e){ r = {ok:false,error:'서버에 연결할 수 없어요. 잠시 후 새로고침해 주세요.'}; }
+  }
+  if(!r.ok){ $app.replaceChildren(h('div',{class:'err'},r.error||'불러오지 못했어요.')); return; }
+  S.data = r;
+  const d = new Date();
+  document.getElementById('upd').textContent = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} 기준`;
+  render();
+}
+
+/* ---------- 데모 데이터 (가짜 이름) ---------- */
+function demoList(){
+  const classes=[]; for(let g=1;g<=3;g++) for(let b=1;b<=6;b++) classes.push({g,b,total:14+((g*7+b*3)%6)});
+  const mk=(no,type,team,cls,n,title,extra={})=>({
+    no,at:`11/${12+(no%5)} 0${(no%9)+1}:20`,type,team,rep:`${cls[0]} 3번 가나다`,count:n*cls.length,
+    students:cls.map(c=>`${c}: 가나다, 라마바, 사아자 외`).join('\n'),teachers:`담임${cls[0].replace('-','')}, 부담임${cls[0].replace('-','')}`,
+    title,detail:'',minutes:0,items:'',budget:null,
+    ids:cls.flatMap(c=>Array.from({length:n},(_,i)=>`${c}-${i+1}`)),...extra});
+  const subs=[
+    mk(1,'합창','1학년 합창단',['1-1','1-2'],10,'미정',{detail:'피아노'}),
+    mk(2,'합창','2학년 3·4반',['2-3','2-4'],9,'바람이 불어오는 곳',{detail:'음원'}),
+    mk(3,'부스','요리반',['2-1'],12,'떡볶이 체험 부스',{detail:'조리 체험',items:'책상 4, 의자 8, 전기 사용',budget:55000}),
+    mk(4,'부스','미디어반',['3-2'],8,'포토존',{detail:'사진 촬영 체험',items:'책상 2',budget:30000}),
+    mk(5,'활동 발표','독서토론반',['1-5'],6,'올해의 책 발표',{detail:'PPT',minutes:7}),
+    mk(6,'공연','밴드부',['3-1'],5,'미정',{minutes:6,items:'앰프, 드럼',detail:''}),
+  ];
+  return new Promise(r=>setTimeout(()=>r({ok:true,types:TYPES,classes,subs,demo:true}),250));
+}
+
+/* ---------- 화면 ---------- */
+const match = (s,q)=>!q||[s.no,s.team,s.title,s.teachers,s.rep,s.students,s.detail,s.items].join(' ').toLowerCase().includes(q.toLowerCase());
+const fmt = n=>Number(n).toLocaleString('ko-KR');
+
+function render(){
+  const d=S.data, subs=d.subs;
+  const nodes=[];
+  if(d.demo) nodes.push(h('div',{class:'demo'},'미리보기(데모) 모드예요. 구글 스프레드시트에 연결하기 전이라 가짜 데이터가 표시돼요.'));
+
+  // 요약
+  const uniq=new Set(subs.flatMap(s=>s.ids));
+  const totalStu=d.classes.reduce((a,c)=>a+c.total,0);
+  const tbd=subs.filter(s=>s.title==='미정').length;
+  const budget=subs.filter(s=>s.type==='부스').reduce((a,s)=>a+(s.budget||0),0);
+  const mins=subs.filter(s=>s.type==='활동 발표'||s.type==='공연').reduce((a,s)=>a+(s.minutes||0),0);
+  const stat=(v,l)=>h('div',{class:'stat'},h('div',{class:'v'},v),h('div',{class:'l'},l));
+  nodes.push(h('div',{class:'sum'},
+    stat(`${subs.length}건`,'전체 접수'),
+    stat(`${uniq.size}명`,`참여 학생 (전체 ${totalStu}명)`),
+    stat(`${tbd}건`,'곡명·제목 미정'),
+    stat(`${mins}분`,'오후 프로그램 소요 시간'),
+    stat(`${fmt(budget)}원`,'부스 필요 예산 합계')));
+
+  // 탭
+  const tabs=h('div',{class:'tabs'});
+  const tabList=['전체',...TYPES,'학급별 현황'];
+  tabList.forEach(t=>{
+    const n=t==='전체'?subs.length:TYPES.includes(t)?subs.filter(s=>s.type===t).length:null;
+    tabs.append(h('button',{class:'tab'+(t===S.tab?' cur':''),onclick:()=>{ S.tab=t; render(); }},t,n!=null?h('small',null,n):null));
+  });
+  nodes.push(tabs);
+
+  if(S.tab==='학급별 현황'){
+    nodes.push(classTable(d));
+  } else {
+    const q=h('input',{type:'search',placeholder:'팀 이름, 곡명, 학생·교사 이름 검색',value:S.q,oninput:e=>{ S.q=e.target.value; renderList(); }});
+    nodes.push(q, h('div',{id:'list'}));
+  }
+  $app.replaceChildren(...nodes);
+  if(S.tab!=='학급별 현황') renderList();
+}
+
+function renderList(){
+  const box=document.getElementById('list'); if(!box) return;
+  const list=S.data.subs.filter(s=>(S.tab==='전체'||s.type===S.tab)&&match(s,S.q)).sort((a,b)=>a.no-b.no);
+  if(!list.length){ box.replaceChildren(h('div',{class:'empty'},S.q?'검색 결과가 없어요.':'아직 접수된 내용이 없어요.')); return; }
+  box.replaceChildren(...list.map(card));
+}
+
+function card(s){
+  const label = s.type==='합창'?'곡명':s.type==='부스'?'부스':s.type==='활동 발표'?'발표':'곡/종목';
+  const rows=[];
+  const add=(k,v)=>{ if(v!==''&&v!=null&&v!==0) rows.push([k,v]); };
+  add('접수 일시',s.at);
+  add('지도 교사',s.teachers);
+  add('대표 학생',s.rep);
+  if(s.type==='합창') add('반주 방식',s.detail);
+  if(s.type==='부스'){ add('운영 내용',s.detail); add('필요 물품',s.items); if(s.budget!=null) add('필요 예산',`${fmt(s.budget)}원`); }
+  if(s.type==='활동 발표'){ add('발표 형태',s.detail); add('소요 시간',s.minutes?`${s.minutes}분`:''); add('추가 장비',s.items); }
+  if(s.type==='공연'){ add('소요 시간',s.minutes?`${s.minutes}분`:''); add('추가 장비',s.items); }
+  add('참여 학생',s.students);
+  return h('details',{},
+    h('summary',null,
+      h('span',{class:'no'},`#${s.no}`),
+      h('span',{class:'team'},s.team),
+      h('span',{class:'badge'},s.type),
+      s.title?h('span',{class:'badge'+(s.title==='미정'?' tbd':'')},`${label}: ${s.title}`):null,
+      h('span',{class:'meta'},`${s.count}명`)),
+    h('div',{class:'body'},h('dl',null,rows.flatMap(([k,v])=>[h('dt',null,k),h('dd',null,String(v))]))));
+}
+
+function classTable(d){
+  const cnt={}; TYPES.forEach(t=>cnt[t]={});
+  d.subs.forEach(s=>s.ids.forEach(id=>{ const k=id.split('-').slice(0,2).join('-'); cnt[s.type][k]=(cnt[s.type][k]||0)+1; }));
+  const classes=d.classes.slice().sort((a,b)=>a.g-b.g||a.b-b.b);
+  const none=classes.filter(c=>!cnt['합창'][`${c.g}-${c.b}`]).map(c=>`${c.g}-${c.b}`);
+  const out=[];
+  out.push(none.length
+    ? h('div',{class:'note'},`합창에 접수한 학생이 한 명도 없는 학급: ${none.join(', ')}`)
+    : h('div',{class:'note',style:'background:#e7f6ee;color:#1e7a4c'},'모든 학급에서 합창 접수가 있어요.'));
+  const tbl=h('table',null,
+    h('tr',null,h('th',null,'학급'),h('th',null,'인원'),TYPES.map(t=>h('th',null,t))),
+    classes.map(c=>{ const k=`${c.g}-${c.b}`;
+      return h('tr',null,h('td',null,k),h('td',null,c.total),
+        TYPES.map(t=>{ const n=cnt[t][k]||0; return h('td',{class:n?'':(t==='합창'?'zc':'z')},n?`${n}명`:'-'); })); }));
+  out.push(tbl, h('div',{class:'meta',style:'margin-top:6px'},'각 칸은 해당 유형으로 접수한 그 학급 학생 수예요.'));
+  return h('div',null,...out);
+}
+
+document.getElementById('reload').addEventListener('click',load);
+document.getElementById('print').addEventListener('click',()=>{ document.querySelectorAll('details').forEach(d=>d.open=true); window.print(); });
+load();
+</script>
+</body>
+</html>
